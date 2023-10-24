@@ -1,0 +1,69 @@
+version: "3"
+
+networks:
+  airport:
+    external: false
+
+services:
+  general-server:
+    image: hardec/general-airport:1.0.0-SNAPSHOT
+    container_name: general-airport
+    environment:
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_SOURCE=jdbc:postgresql://postgres-general:5432/postgres
+      - WEBHOOK_URL=http://pipeline-airport:8081/v1/webhook
+    restart: always
+    networks:
+      - airport
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db-general
+
+  db-general:
+    image: postgres:14
+    restart: always
+    hostname: postgres-general
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    networks:
+      - airport
+
+    volumes:
+      - ./postgres/bd-1:/var/lib/postgresql/data
+
+
+  pipeline-server:
+    image: hardec/pipeline-airport:1.0.0-SNAPSHOT
+    container_name: pipeline-airport
+    hostname: pipeline
+    environment:
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_SOURCE=jdbc:postgresql://postgres-pipeline:5432/postgres
+    restart: always
+    networks:
+      - airport
+    ports:
+      - "8044:8081"
+    depends_on:
+      - db-pipeline
+
+  db-pipeline:
+      image: postgres:14
+      restart: always
+      hostname: postgres-pipeline
+      environment:
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=postgres
+        - POSTGRES_DB=postgres
+      networks:
+        - airport
+
+      volumes:
+        - ./postgres/bd-2:/var/lib/postgresql/data
+
+
